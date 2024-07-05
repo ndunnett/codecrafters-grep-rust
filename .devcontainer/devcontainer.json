@@ -1,0 +1,17 @@
+{
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "mounts": [
+    "source=${localWorkspaceFolder},target=/home/dev/ws,type=bind,consistency=cached"
+  ],
+  "workspaceFolder": "/home/dev/ws",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "rust-lang.rust-analyzer",
+        "tamasfe.even-better-toml"
+      ]
+    }
+  }
+}
