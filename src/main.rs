@@ -4,6 +4,7 @@ use std::process;
 
 enum Token {
     Digit,
+    Alphanumeric,
     Char(char),
 }
 
@@ -14,13 +15,14 @@ fn parse_pattern(pattern: &str) -> Result<Vec<Token>, String> {
     while let Some(c) = it.next() {
         if c == '\\' {
             if let Some(c) = it.next() {
-                if c == 'd' {
-                    tokens.push(Token::Digit);
-                } else {
-                    return Err(format!("Unhandled escape pattern: \\{}", c));
-                }
+                tokens.push(match c {
+                    'd' => Token::Digit,
+                    'w' => Token::Alphanumeric,
+                    '\\' => Token::Char('\\'),
+                    _ => return Err(format!("Unhandled escape pattern: \\{}", c)),
+                });
             } else {
-                return Err(format!("Unhandled escape pattern: \\{}", c));
+                return Err("Unfinished escape pattern: \\".into());
             }
         } else {
             tokens.push(Token::Char(c));
@@ -35,12 +37,9 @@ fn match_pattern(input_line: &str, pattern: &str) -> Result<bool, String> {
     let token = pat.first().unwrap();
 
     match token {
-        Token::Digit => {
-            Ok(input_line.contains(|c: char| c.is_ascii_digit()))
-        }
-        Token::Char(c) => {
-            Ok(input_line.contains(*c))
-        }
+        Token::Digit => Ok(input_line.contains(|c: char| c.is_ascii_digit())),
+        Token::Alphanumeric => Ok(input_line.contains(|c: char| c.is_alphanumeric())),
+        Token::Char(c) => Ok(input_line.contains(*c)),
     }
 }
 
