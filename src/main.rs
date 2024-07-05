@@ -4,7 +4,7 @@ use std::process;
 
 fn match_pattern(input_line: &str, pattern: &str) -> bool {
     if pattern.chars().count() == 1 {
-        return input_line.contains(pattern);
+        input_line.contains(pattern)
     } else {
         panic!("Unhandled pattern: {}", pattern)
     }
@@ -26,9 +26,9 @@ fn main() {
     io::stdin().read_line(&mut input_line).unwrap();
 
     // Uncomment this block to pass the first stage
-    // if match_pattern(&input_line, &pattern) {
-    //     process::exit(0)
-    // } else {
-    //     process::exit(1)
-    // }
+    if match_pattern(&input_line, &pattern) {
+        process::exit(0)
+    } else {
+        process::exit(1)
+    }
 }
