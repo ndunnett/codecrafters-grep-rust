@@ -5,19 +5,12 @@ pub enum Atom {
     Digit,
     Alphanumeric,
     Char(char),
-    AnchorStart,
-    AnchorEnd,
 }
 
-impl Atom {
-    pub fn matches(&self, c: char) -> bool {
-        match self {
-            Self::Digit => c.is_ascii_digit(),
-            Self::Alphanumeric => c.is_alphanumeric(),
-            Self::Char(ch) => c == *ch,
-            Self::AnchorStart | Self::AnchorEnd => true,
-        }
-    }
+#[derive(Debug, Clone)]
+pub enum Anchor {
+    Start,
+    End,
 }
 
 #[derive(Debug, Clone)]
@@ -26,49 +19,14 @@ pub enum Set {
     Negative(Vec<Atom>),
 }
 
-impl Set {
-    pub fn matches(&self, c: char) -> bool {
-        match self {
-            Self::Positive(set) => set.iter().any(|atom| atom.matches(c)),
-            Self::Negative(set) => !set.iter().any(|atom| atom.matches(c)),
-        }
-    }
-}
-
 #[derive(Debug, Clone)]
 pub enum Pattern {
     Atom(Atom),
+    Anchor(Anchor),
     Set(Set),
-    Sequence(Vec<Pattern>),
-}
-
-impl Pattern {
-    pub fn flatten(&self) -> Vec<FlatPattern> {
-        let mut flat = Vec::new();
-
-        match self {
-            Self::Atom(atom) => flat.push(FlatPattern::Atom(atom.clone())),
-            Self::Set(set) => flat.push(FlatPattern::Set(set.clone())),
-            Self::Sequence(seq) => seq.iter().for_each(|p| flat.extend(p.flatten())),
-        }
-
-        flat
-    }
-}
-
-#[derive(Debug, Clone)]
-pub enum FlatPattern {
-    Atom(Atom),
-    Set(Set),
-}
-
-impl FlatPattern {
-    pub fn matches(&self, c: char) -> bool {
-        match self {
-            Self::Atom(atom) => atom.matches(c),
-            Self::Set(set) => set.matches(c),
-        }
-    }
+    Group(Vec<Pattern>),
+    OneOrMore(Box<Pattern>),
+    ZeroOrMore(Box<Pattern>),
 }
 
 pub struct Parser<'a> {
@@ -97,20 +55,34 @@ impl<'a> Parser<'a> {
         }
     }
 
-    pub fn parse(&mut self) -> Result<Pattern, String> {
-        let mut sequence = Vec::new();
+    pub fn parse(&mut self) -> Result<Vec<Pattern>, String> {
+        let mut seq = Vec::new();
 
         while let Some(c) = self.next() {
             match c {
-                '\\' => sequence.push(self.parse_escape()?),
-                '[' => sequence.push(self.parse_set()?),
-                '^' => sequence.push(Pattern::Atom(Atom::AnchorStart)),
-                '$' => sequence.push(Pattern::Atom(Atom::AnchorEnd)),
-                _ => sequence.push(Pattern::Atom(Atom::Char(c))),
+                '\\' => seq.push(self.parse_escape()?),
+                '[' => seq.push(self.parse_set()?),
+                '^' => seq.push(Pattern::Anchor(Anchor::Start)),
+                '$' => seq.push(Pattern::Anchor(Anchor::End)),
+                '+' => {
+                    if let Some(last) = seq.pop() {
+                        seq.push(Pattern::OneOrMore(Box::new(last)));
+                    } else {
+                        return Err("Failed to parse OneOrMore expression".into());
+                    }
+                }
+                '*' => {
+                    if let Some(last) = seq.pop() {
+                        seq.push(Pattern::ZeroOrMore(Box::new(last)));
+                    } else {
+                        return Err("Failed to parse ZeroOrMore expression".into());
+                    }
+                }
+                _ => seq.push(Pattern::Atom(Atom::Char(c))),
             }
         }
 
-        Ok(Pattern::Sequence(sequence))
+        Ok(seq)
     }
 
     fn parse_escape(&mut self) -> Result<Pattern, String> {
@@ -118,7 +90,7 @@ impl<'a> Parser<'a> {
             match c {
                 'd' => Ok(Pattern::Atom(Atom::Digit)),
                 'w' => Ok(Pattern::Atom(Atom::Alphanumeric)),
-                '^' | '$' | '\\' => Ok(Pattern::Atom(Atom::Char(c))),
+                '^' | '$' | '\\' | '+' | '*' => Ok(Pattern::Atom(Atom::Char(c))),
                 _ => Err(format!("Unhandled escape pattern: \\{}", c)),
             }
         } else {

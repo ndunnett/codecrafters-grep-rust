@@ -4,6 +4,7 @@ use std::env;
 use std::io;
 use std::process;
 
+mod iterators;
 mod matcher;
 mod parser;
 
@@ -17,16 +18,22 @@ fn main() {
     let mut input = String::new();
     io::stdin().read_line(&mut input).unwrap();
 
-    println!("input: {input:?}");
-    println!("pattern: {pattern:?}");
+    match matcher::Matcher::new(&pattern, &input) {
+        Ok(mut matcher) => {
+            matcher.matches();
 
-    let result = matcher::matches(&pattern, &input);
+            if matcher.matches.is_empty() {
+                process::exit(1)
+            } else {
+                for range in matcher.matches.iter().rev() {
+                    input.insert_str(range.end, "\x1B[0m");
+                    input.insert_str(range.start, "\x1B[1;31m");
+                }
 
-    println!("result: {result:?}");
-
-    match result {
-        Ok(true) => process::exit(0),
-        Ok(false) => process::exit(1),
+                println!("{}", input);
+                process::exit(0)
+            }
+        }
         Err(e) => {
             eprintln!("{e}");
             process::exit(1)
