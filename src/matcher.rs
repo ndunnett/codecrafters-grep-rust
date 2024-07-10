@@ -1,7 +1,7 @@
 use std::ops::Range;
 
 use crate::iterators::{CharIter, PatternIter};
-use crate::parser::*;
+use crate::parser::{Anchor, Atom, Pattern, Set};
 
 pub struct Matcher {
     patterns: PatternIter,
@@ -48,8 +48,6 @@ impl Matcher {
     }
 
     pub fn matches(&mut self) {
-        println!("{:#?}\n", &self.patterns);
-
         while self.chars.peek().is_some() {
             if let Some(pattern) = self.patterns.peek() {
                 match (self.match_pattern(&pattern), self.match_start.is_some()) {

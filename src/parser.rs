@@ -1,7 +1,6 @@
-use std::fmt;
 use std::str::Chars;
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub enum Atom {
     Digit,
     Alphanumeric,
@@ -9,30 +8,10 @@ pub enum Atom {
     Char(char),
 }
 
-impl fmt::Debug for Atom {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Digit => write!(f, "\\d"),
-            Self::Alphanumeric => write!(f, "\\w"),
-            Self::Wildcard => write!(f, "."),
-            Self::Char(c) => write!(f, "{c:?}"),
-        }
-    }
-}
-
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub enum Anchor {
     Start,
     End,
-}
-
-impl fmt::Debug for Anchor {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Start => write!(f, "^"),
-            Self::End => write!(f, "$"),
-        }
-    }
 }
 
 #[derive(Debug, Clone)]
@@ -41,7 +20,7 @@ pub enum Set {
     Negative(Vec<Atom>),
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub enum Pattern {
     Atom(Atom),
     Anchor(Anchor),
@@ -51,21 +30,6 @@ pub enum Pattern {
     ZeroOrMore(Box<Pattern>),
     ZeroOrOne(Box<Pattern>),
     Alternation(Box<Pattern>, Box<Pattern>),
-}
-
-impl fmt::Debug for Pattern {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Atom(s) => write!(f, "{s:?}"),
-            Self::Anchor(s) => write!(f, "{s:?}"),
-            Self::Set(s) => write!(f, "set {s:#?}"),
-            Self::Group(s) => write!(f, "{s:#?}"),
-            Self::OneOrMore(s) => write!(f, "+ {s:#?}"),
-            Self::ZeroOrMore(s) => write!(f, "* {s:#?}"),
-            Self::ZeroOrOne(s) => write!(f, "? {s:#?}"),
-            Self::Alternation(l, r) => write!(f, "Alternation {l:#?}, {r:#?}"),
-        }
-    }
 }
 
 pub struct Parser<'a> {

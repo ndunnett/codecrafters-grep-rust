@@ -1,17 +1,9 @@
-use std::fmt;
-
 use crate::parser::{Parser, Pattern};
 
 pub struct PatternIter {
     patterns: Vec<Pattern>,
     next_pattern: Option<Pattern>,
     pub index: usize,
-}
-
-impl fmt::Debug for PatternIter {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{:#?}", self.patterns)
-    }
 }
 
 impl PatternIter {
@@ -47,12 +39,6 @@ impl PatternIter {
         self.next_pattern.clone()
     }
 
-    pub fn next(&mut self) -> Option<Pattern> {
-        let pat = self.next_pattern.clone();
-        self.consume();
-        pat
-    }
-
     pub fn reset(&mut self) {
         self.next_pattern = if !self.patterns.is_empty() {
             Some(self.patterns[0].clone())
@@ -61,10 +47,6 @@ impl PatternIter {
         };
 
         self.index = 0;
-    }
-
-    pub fn len(&self) -> usize {
-        self.patterns.len()
     }
 }
 
@@ -107,12 +89,6 @@ impl CharIter {
         self.next_char
     }
 
-    pub fn next(&mut self) -> Option<char> {
-        let c = self.next_char;
-        self.consume();
-        c
-    }
-
     pub fn set_index(&mut self, index: usize) {
         self.index = index;
 
@@ -121,9 +97,5 @@ impl CharIter {
         } else {
             None
         };
-    }
-
-    pub fn len(&self) -> usize {
-        self.chars.len()
     }
 }
