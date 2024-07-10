@@ -113,6 +113,7 @@ impl Matcher {
                 Atom::Digit => c.is_ascii_digit(),
                 Atom::Alphanumeric => c.is_alphanumeric(),
                 Atom::Char(ch) => c == *ch,
+                Atom::Wildcard => true,
             };
 
             if result && consuming {
