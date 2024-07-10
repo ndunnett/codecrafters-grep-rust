@@ -5,6 +5,8 @@ pub enum Atom {
     Digit,
     Alphanumeric,
     Char(char),
+    AnchorStart,
+    AnchorEnd,
 }
 
 impl Atom {
@@ -13,6 +15,7 @@ impl Atom {
             Self::Digit => c.is_ascii_digit(),
             Self::Alphanumeric => c.is_alphanumeric(),
             Self::Char(ch) => c == *ch,
+            Self::AnchorStart | Self::AnchorEnd => true,
         }
     }
 }
@@ -101,6 +104,8 @@ impl<'a> Parser<'a> {
             match c {
                 '\\' => sequence.push(self.parse_escape()?),
                 '[' => sequence.push(self.parse_set()?),
+                '^' => sequence.push(Pattern::Atom(Atom::AnchorStart)),
+                '$' => sequence.push(Pattern::Atom(Atom::AnchorEnd)),
                 _ => sequence.push(Pattern::Atom(Atom::Char(c))),
             }
         }
@@ -113,7 +118,7 @@ impl<'a> Parser<'a> {
             match c {
                 'd' => Ok(Pattern::Atom(Atom::Digit)),
                 'w' => Ok(Pattern::Atom(Atom::Alphanumeric)),
-                '\\' => Ok(Pattern::Atom(Atom::Char('\\'))),
+                '^' | '$' | '\\' => Ok(Pattern::Atom(Atom::Char(c))),
                 _ => Err(format!("Unhandled escape pattern: \\{}", c)),
             }
         } else {

@@ -1,4 +1,4 @@
-use crate::parser::{FlatPattern, Parser};
+use crate::parser::*;
 
 pub struct PatternIter {
     patterns: Vec<FlatPattern>,
@@ -23,10 +23,8 @@ impl PatternIter {
         })
     }
 
-    pub fn next(&mut self) -> Option<FlatPattern> {
+    pub fn consume(&mut self) {
         if self.next_pattern.is_some() {
-            let pat = self.next_pattern.clone();
-
             self.next_pattern = if self.index + 1 < self.patterns.len() {
                 Some(self.patterns[self.index + 1].clone())
             } else {
@@ -34,14 +32,17 @@ impl PatternIter {
             };
 
             self.index += 1;
-            pat
-        } else {
-            None
         }
     }
 
     pub fn peek(&self) -> Option<FlatPattern> {
         self.next_pattern.clone()
+    }
+
+    pub fn next(&mut self) -> Option<FlatPattern> {
+        let pat = self.next_pattern.clone();
+        self.consume();
+        pat
     }
 
     pub fn reset(&mut self) {
@@ -55,31 +56,110 @@ impl PatternIter {
     }
 }
 
+pub struct CharIter {
+    chars: Vec<char>,
+    next_char: Option<char>,
+    pub index: usize,
+}
+
+impl CharIter {
+    pub fn new(input: &str) -> Result<Self, String> {
+        let chars = input.chars().collect::<Vec<_>>();
+
+        let next_char = if !chars.is_empty() {
+            Some(chars[0])
+        } else {
+            None
+        };
+
+        Ok(Self {
+            chars,
+            next_char,
+            index: 0,
+        })
+    }
+
+    pub fn consume(&mut self) {
+        if self.next_char.is_some() {
+            self.next_char = if self.index + 1 < self.chars.len() {
+                Some(self.chars[self.index + 1])
+            } else {
+                None
+            };
+
+            self.index += 1;
+        }
+    }
+
+    pub fn peek(&self) -> Option<char> {
+        self.next_char
+    }
+
+    pub fn next(&mut self) -> Option<char> {
+        let c = self.next_char;
+        self.consume();
+        c
+    }
+
+    pub fn wind_back(&mut self, offset: usize) {
+        self.index = self.index.saturating_sub(offset);
+
+        self.next_char = if !self.chars.is_empty() {
+            Some(self.chars[self.index])
+        } else {
+            None
+        };
+    }
+
+    pub fn len(&self) -> usize {
+        self.chars.len()
+    }
+}
+
 pub fn matches(pattern: &str, input: &str) -> Result<bool, String> {
     let mut patterns = PatternIter::new(pattern)?;
-    let chars = input.chars().collect::<Vec<_>>();
-    let mut char_index = 0;
+    let mut chars = CharIter::new(input)?;
     let mut in_match = false;
 
-    while let Some(c) = chars.get(char_index) {
-        if let Some(pattern) = patterns.peek() {
-            match (pattern.matches(*c), in_match) {
-                (true, false) => in_match = true,
-                (false, true) => {
-                    in_match = false;
-                    patterns.reset()
+    while let Some(c) = chars.peek() {
+        match patterns.peek() {
+            Some(FlatPattern::Atom(Atom::AnchorStart)) => {
+                if chars.index == 0 {
+                    patterns.consume();
+                    in_match = true;
+                } else {
+                    return Ok(false);
                 }
-                _ => {}
             }
+            Some(FlatPattern::Atom(Atom::AnchorEnd)) => {
+                if chars.index == chars.len() - 1 {
+                    patterns.consume();
+                    in_match = true;
+                } else {
+                    return Ok(false);
+                }
+            }
+            Some(pattern) => {
+                let matched = pattern.matches(c);
 
-            if in_match {
-                let _ = patterns.next();
+                match (matched, in_match) {
+                    (true, false) => in_match = true,
+                    (false, true) => {
+                        in_match = false;
+                        chars.wind_back(patterns.index);
+                        patterns.reset();
+                    }
+                    _ => {}
+                }
+
+                if in_match {
+                    patterns.consume();
+                }
+
+                chars.consume();
             }
-        } else {
-            return Ok(true);
+            None => return Ok(true),
         }
-
-        char_index += 1;
     }
 
     Ok(patterns.peek().is_none())
