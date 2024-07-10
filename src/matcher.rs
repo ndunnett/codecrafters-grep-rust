@@ -104,6 +104,7 @@ impl Matcher {
                 self.match_pattern(pat);
                 true
             }
+            Pattern::Alternation(lhs, rhs) => self.match_pattern(lhs) || self.match_pattern(rhs),
         }
     }
 

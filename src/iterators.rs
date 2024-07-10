@@ -10,21 +10,13 @@ pub struct PatternIter {
 
 impl fmt::Debug for PatternIter {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "Pattern {{\n{}\n}}",
-            self.patterns
-                .iter()
-                .map(|p| format!("    {p:?},"))
-                .collect::<Vec<_>>()
-                .join("\n")
-        )
+        write!(f, "{:#?}", self.patterns)
     }
 }
 
 impl PatternIter {
     pub fn new(pattern: &str) -> Result<Self, String> {
-        let patterns = Parser::new(pattern).parse()?;
+        let patterns = Parser::new(pattern).parse(0)?;
 
         let next_pattern = if !patterns.is_empty() {
             Some(patterns[0].clone())
