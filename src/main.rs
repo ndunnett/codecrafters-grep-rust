@@ -17,15 +17,16 @@ fn main() {
     let mut input = String::new();
     io::stdin().read_line(&mut input).unwrap();
 
-    match matcher::matches(&pattern, &input) {
-        Ok(true) => {
-            println!("true");
-            process::exit(0)
-        }
-        Ok(false) => {
-            println!("false");
-            process::exit(1)
-        }
+    println!("input: {input:?}");
+    println!("pattern: {pattern:?}");
+
+    let result = matcher::matches(&pattern, &input);
+
+    println!("result: {result:?}");
+
+    match result {
+        Ok(true) => process::exit(0),
+        Ok(false) => process::exit(1),
         Err(e) => {
             eprintln!("{e}");
             process::exit(1)

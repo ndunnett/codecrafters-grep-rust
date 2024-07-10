@@ -54,6 +54,10 @@ impl PatternIter {
 
         self.index = 0;
     }
+
+    pub fn len(&self) -> usize {
+        self.patterns.len()
+    }
 }
 
 pub struct CharIter {
@@ -125,19 +129,17 @@ pub fn matches(pattern: &str, input: &str) -> Result<bool, String> {
         match patterns.peek() {
             Some(FlatPattern::Atom(Atom::AnchorStart)) => {
                 if chars.index == 0 {
-                    patterns.consume();
                     in_match = true;
+                    patterns.consume();
                 } else {
                     return Ok(false);
                 }
             }
             Some(FlatPattern::Atom(Atom::AnchorEnd)) => {
-                if chars.index == chars.len() - 1 {
-                    patterns.consume();
-                    in_match = true;
-                } else {
-                    return Ok(false);
-                }
+                in_match = false;
+                chars.wind_back(patterns.index);
+                chars.consume();
+                patterns.reset();
             }
             Some(pattern) => {
                 let matched = pattern.matches(c);
@@ -162,5 +164,8 @@ pub fn matches(pattern: &str, input: &str) -> Result<bool, String> {
         }
     }
 
-    Ok(patterns.peek().is_none())
+    Ok(matches!(
+        patterns.peek(),
+        Some(FlatPattern::Atom(Atom::AnchorEnd)) | None
+    ))
 }
