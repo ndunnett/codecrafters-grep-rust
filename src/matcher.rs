@@ -99,7 +99,11 @@ impl Matcher {
             Pattern::ZeroOrMore(pat) => {
                 while self.match_pattern(pat) {}
                 true
-            } // _ => unimplemented!(),
+            }
+            Pattern::ZeroOrOne(pat) => {
+                self.match_pattern(pat);
+                true
+            }
         }
     }
 

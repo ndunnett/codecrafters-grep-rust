@@ -27,6 +27,7 @@ pub enum Pattern {
     Group(Vec<Pattern>),
     OneOrMore(Box<Pattern>),
     ZeroOrMore(Box<Pattern>),
+    ZeroOrOne(Box<Pattern>),
 }
 
 pub struct Parser<'a> {
@@ -78,6 +79,13 @@ impl<'a> Parser<'a> {
                         return Err("Failed to parse ZeroOrMore expression".into());
                     }
                 }
+                '?' => {
+                    if let Some(last) = seq.pop() {
+                        seq.push(Pattern::ZeroOrOne(Box::new(last)));
+                    } else {
+                        return Err("Failed to parse ZeroOrOne expression".into());
+                    }
+                }
                 _ => seq.push(Pattern::Atom(Atom::Char(c))),
             }
         }
@@ -90,7 +98,7 @@ impl<'a> Parser<'a> {
             match c {
                 'd' => Ok(Pattern::Atom(Atom::Digit)),
                 'w' => Ok(Pattern::Atom(Atom::Alphanumeric)),
-                '^' | '$' | '\\' | '+' | '*' => Ok(Pattern::Atom(Atom::Char(c))),
+                '^' | '$' | '\\' | '+' | '*' | '?' => Ok(Pattern::Atom(Atom::Char(c))),
                 _ => Err(format!("Unhandled escape pattern: \\{}", c)),
             }
         } else {
